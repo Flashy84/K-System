@@ -77,6 +77,17 @@ def print_ticket(number):
     buf += SIZE_NORMAL
     buf += " ".encode('cp865')
 
+    # --- ASCII-hund nederst ---
+    buf += FEED_TOP
+    buf += "           ^\\\n".encode('cp865')
+    buf += " /        //o__o\n".encode('cp865')
+    buf += "/\\       /  __/\n".encode('cp865')
+    buf += "\\ \\______\\  /     -Jeg vil ha Godbit!\n".encode('cp865')
+    buf += " \\         /\n".encode('cp865')
+    buf += "  \\ \\----\\ \\\n".encode('cp865')
+    buf += "   \\_\\_   \\_\\_\n\n".encode('cp865')
+
+    
     # --- Detaljer venstrejustert ---
     buf += CENTER
     buf += f"Tjeneste: {SERVICE_NAME}\n".encode('cp865')
