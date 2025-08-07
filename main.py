@@ -1,6 +1,6 @@
 # zoohaven_epson_kiosk.py
 
-import socket
+from escpos.printer import Network
 import sys
 import time
 import datetime
@@ -8,12 +8,16 @@ import requests
 from gpiozero import Button
 
 # ----------------- KONFIGURASJON -----------------
-# Sett IP-adresse til din Epson TM-T88VI
-IP_ADDRESS   = "192.168.10.154"  # Endre til skriverens IP
+IP_ADDRESS   = "192.168.10.154"  # Epson TM-T88VI IP
 PORT         = 9100
 API_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
 BUTTON_PIN   = 17  # BCM-pin for trykknapp
 SERVICE_NAME = "Zoohaven"
+LOGO_PATH    = "logo_new.png"
+QR_PATH      = "googleqr.png"
+
+# Initialiser printer over nettverk
+printer = Network(IP_ADDRESS, PORT, timeout=5)
 
 # ----------------- HJELPEFUNKSJONER -----------------
 def get_new_ticket_from_api(service):
@@ -26,46 +30,33 @@ def get_new_ticket_from_api(service):
         print(f"API-feil: {e}")
     return None
 
-
-def send_to_printer(data: bytes):
-    """Sender rå ESC/POS-data til skriveren over TCP/IP."""
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.connect((IP_ADDRESS, PORT))
-            sock.sendall(data)
-        return True
-    except Exception as e:
-        print(f"Utskrift-feil: {e}")
-        return False
-
 # ----------------- PRINTFUNKSJON -----------------
 def print_ticket(number):
-    """Bygger ESC/POS-kommando og sender til Epson-kutter."""
+    """Printer ut billett med logo, større tekst, ÆØÅ-støtte og QR-kode."""
     now = datetime.datetime.now().strftime('%d.%m.%Y %H:%M')
-    # ESC/POS-kommandoer
-    INIT        = b"\x1b@"            # ESC @ (Initialize)
-    CENTER      = b"\x1ba\x01"      # ESC a 1 (Center)
-    SIZE_DOUBLE = b"\x1d!\x11"      # GS ! 0x11 (2×2)
-    SIZE_NORMAL = b"\x1d!\x00"      # GS ! 0x00 (normal)
-    FEED        = b"\n" * 8         # 8 linjer feed
-    CUT_FULL    = b"\x1dV\x00"      # GS V 0 (full cut)
 
-    data = bytearray()
-    data += INIT
-    data += CENTER
-    data += SIZE_DOUBLE
-    data += f"Nr: {number}\n".encode('utf-8')
-    data += SIZE_NORMAL
-    data += f"Tjeneste: {SERVICE_NAME}\n".encode('utf-8')
-    data += f"{now}\n\n".encode('utf-8')
-    data += b"Takk for ditt besok!\n\n"
-    data += FEED
-    data += CUT_FULL
+    # Velkommen-tekst
+    printer.set(align='center')
+    printer.image(LOGO_PATH)
+    printer.text("\n")
 
-    if send_to_printer(data):
-        print(f"Utskrift OK: {number}")
-    else:
-        print(f"Utskrift feilet for {number}")
+    # Stor, fet kjølapp
+    printer.set(align='center', width=2, height=2)
+    printer.text(f"Nr: {number}\n")
+    printer.set(width=1, height=1)
+    
+    # Tjeneste og tidspunkt
+    printer.text(f"Tjeneste: {SERVICE_NAME}\n")
+    printer.text(f"{now}\n")
+    printer.text("Takk for ditt besøk!\n\n")
+
+    # QR-kode nederst
+    printer.image(QR_PATH)
+    printer.text("\n")
+
+    # Klipp papiret
+    printer.cut()
+    print(f"Utskrift OK: {number}")
 
 # ----------------- HOVEDLOGIKK -----------------
 def issue_new_ticket():
@@ -77,11 +68,11 @@ def issue_new_ticket():
 
 
 def main():
-    # Oppsett knapp
-    btn = Button(BUTTON_PIN, bounce_time=0.1)  # Debounce knapp for å unngå flere utskrifter per trykk
+    # Sett opp knapp med litt debounce
+    btn = Button(BUTTON_PIN, bounce_time=0.3)
     btn.when_pressed = issue_new_ticket
 
-    print("Starter Epson TM-T88VI kiosk (en lapp per trykk)...")
+    print("Starter Epson TM-T88VI kiosk med logo og QR-kode...")
     try:
         while True:
             time.sleep(1)
