@@ -16,7 +16,7 @@ API_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
 BUTTON_PIN   = 17  # BCM-pin for trykknapp
 SERVICE_NAME = "Zoohaven"
 # Buffer for forhåndshenting av maks 2 numre
-queue_buffer = Queue(maxsize=2)
+queue_buffer = Queue(maxsize=1)
 
 # ----------------- HJELPEFUNKSJONER -----------------
 def get_new_ticket_from_api(service):
