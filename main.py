@@ -38,7 +38,7 @@ def image_to_raster(path):
     w, h = im.size
     if w > target_width:
         new_h = int(h * (target_width / w))
-        im = im.resize((target_width, new_h), Image.ANTIALIAS)
+        im = im.resize((target_width, new_h), Image.LANCZOS)
         w, h = im.size
     # Juster bredde til multiple of 8
     if w % 8:
