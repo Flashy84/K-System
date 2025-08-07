@@ -1,4 +1,4 @@
-# zoohaven_epson_kiosk.py
+# main.py
 
 import socket
 import sys
@@ -92,12 +92,14 @@ def print_ticket(number):
     buf += f"Tjeneste: {SERVICE_NAME}\n".encode('utf-8')
     buf += f"{now}\n\n".encode('utf-8')
     buf += "Takk for ditt besøk!\n\n".encode('utf-8')
-    # QR
+    # QR-kode
     buf += image_to_raster(QR_PATH) + b"\n"
     # Feed & cut
     buf += FEED + CUT_FULL
-    send_to_printer(buf)
-    print(f"Utskrift OK: {number}")
+    if send_to_printer(buf):
+        print(f"Utskrift OK: {number}")
+    else:
+        print(f"Utskrift feilet for {number}")
 
 # ----------------- HOVEDLOGIKK -----------------
 def issue_new_ticket():
