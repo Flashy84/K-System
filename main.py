@@ -81,11 +81,7 @@ def print_ticket(number):
     buf += f"Dato:      {date}\n".encode('cp865')
     buf += f"Tid:       {clock}\n\n".encode('cp865')
 
-    # --- Takk og ekstra info ---
-    buf += CENTER
-    buf += "Takk for ditt besøk!\n".encode('cp865')
-    buf += "Sjekk ut www.zoohaven.no for oppdaterte åpningstider.\n".encode('cp865')
-    buf += "Vi ønsker deg en fin dag.\n".encode('cp865')
+
 
     # --- ASCII-hund venstrejustert nederst ---
     buf += FEED_TOP
@@ -93,7 +89,7 @@ def print_ticket(number):
     buf += "           ^\\\n".encode('cp865')
     buf += " /        //o__o\n".encode('cp865')
     buf += "/\\       /  __/\n".encode('cp865')
-    buf += "\\ \\______\\  /     -ARF! [says Sandy]\n".encode('cp865')
+    buf += "\\ \\______\\  /     -GODBIT! [sier Nala]\n".encode('cp865')
     buf += " \\         /\n".encode('cp865')
     buf += "  \\ \\----\\ \\\n".encode('cp865')
     buf += "   \\_\\_   \\_\\_\n\n".encode('cp865')
