@@ -85,7 +85,7 @@ def print_ticket(number):
     buf += CENTER
     buf += "Takk for ditt besøk!\n".encode('cp865')
     buf += FEED_TOP
-    buf += "Sjekk ut www.zoohaven.no for oppdaterte åpningstider.\n".encode('cp865')
+    buf += "Sjekk ut www.zoohaven.no.\n".encode('cp865')
     buf += "Vi ønsker deg en fin dag.\n".encode('cp865')
 
     # --- Mat & kutt ---
