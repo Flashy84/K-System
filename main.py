@@ -96,7 +96,7 @@ def print_ticket(number):
     buf += "   /`.          ,'-`----Y   |\n".encode('cp865')
     buf += "  (            ;        |   '\n".encode('cp865')
     buf += "  |  ,-.    ,-'         |  /\n".encode('cp865')
-    buf += "  |  | (   |Zoohaven    | / \n".encode('cp865')
+    buf += "  |  | (   |  Zoohaven  | / \n".encode('cp865')
     buf += "  )  |  \\  `.__________|/\n".encode('cp865')
     buf += "  `--'   `--'\n\n".encode('cp865')
 
