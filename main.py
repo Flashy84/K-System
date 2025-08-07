@@ -78,7 +78,7 @@ def issue_new_ticket():
 
 def main():
     # Oppsett knapp
-    btn = Button(BUTTON_PIN)
+    btn = Button(BUTTON_PIN, bounce_time=0.3)  # Debounce knapp for å unngå flere utskrifter per trykk
     btn.when_pressed = issue_new_ticket
 
     print("Starter Epson TM-T88VI kiosk (en lapp per trykk)...")
