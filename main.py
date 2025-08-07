@@ -44,25 +44,25 @@ def print_ticket(number):
 
     # ESC/POS-kommandoer
     INIT        = b"\x1b@"        # ESC @ (reset)
-    CENTER      = b"\x1ba\x01"    # ESC a 1 (centre)
+    CENTER      = b"\x1ba\x01"    # ESC a 1 (center)
     SIZE_DOUBLE = b"\x1d!\x11"    # GS ! 0x11 = dobbel størrelse
     SIZE_NORMAL = b"\x1d!\x00"    # GS ! 0x00 = normal størrelse
     FEED        = b"\n" * 8       # mat 8 linjer
     CUT_FULL    = b"\x1dV\x00"    # GS V 0 = full kutt
 
-    buf = bytearray()
-    buf += INIT + CENTER
+    data = bytearray()
+    data += INIT + CENTER
     # Nr i dobbel størrelse
-    buf += SIZE_DOUBLE + f"Nr: {number}\n".encode("utf-8") + SIZE_NORMAL
+    data += SIZE_DOUBLE + f"Nr: {number}\n".encode("utf-8") + SIZE_NORMAL
     # Tjeneste og tidspunkt
-    buf += f"Tjeneste: {SERVICE_NAME}\n".encode("utf-8")
-    buf += f"{now}\n\n".encode("utf-8")
-    # Takk-tekst med ÆØÅ-støtte
-    buf += "Takk for ditt besøk!\n\n".encode("utf-8")
+    data += f"Tjeneste: {SERVICE_NAME}\n".encode("utf-8")
+    data += f"{now}\n\n".encode("utf-8")
+    # Takk-tekst (ASCII uten ÆØÅ for å unngå problemer)
+    data += b"Takk for ditt besok!\n\n"
     # Mat og kutt
-    buf += FEED + CUT_FULL
+    data += FEED + CUT_FULL
 
-    if send_to_printer(buf):
+    if send_to_printer(data):
         print(f"Utskrift OK: {number}")
     else:
         print(f"Utskrift feilet for {number}")
