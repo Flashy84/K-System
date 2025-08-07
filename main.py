@@ -60,7 +60,7 @@ def print_ticket(number):
     buf += SIZE_NORMAL
     buf += f"Tjeneste: {SERVICE_NAME}\n".encode('utf-8')
     buf += f"{timestamp}\n\n".encode('utf-8')
-    buf += b"Takk for ditt besøk!\n\n".encode('utf-8')
+    buf += "Takk for ditt besøk!\n\n".encode('utf-8')
     buf += FEED
     buf += CUT_FULL
 
