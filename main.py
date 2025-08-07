@@ -44,7 +44,7 @@ def send_to_printer(data: bytes) -> bool:
 
 # ----------------- PRINTFUNKSJON -----------------
 def print_ticket(number):
-    """Bygger og sender en ryddig kølapp med ASCII-hund og større nummer."""
+    """Bygger og sender en ryddig kølapp med ny ASCII-illustrasjon."""
     now = datetime.datetime.now().strftime('%d.%m.%Y %H:%M')
     date, clock = now.split()
 
@@ -56,7 +56,7 @@ def print_ticket(number):
     BOLD_ON         = b"\x1bE\x01"
     BOLD_OFF        = b"\x1bE\x00"
     SIZE_TRIPLE     = b"\x1d!\x22"      # 3×3 font for nummer
-    SIZE_NORMAL     = b"\x1d!\x00"      # Normal size
+    SIZE_NORMAL     = b"\x1d!\x00"      # Normal
     FEED_TOP        = b"\n" * 2         # Mat før bunntekst
     FEED_BOTTOM     = b"\n" * 6         # Mat før kutt
     CUT_FULL        = b"\x1dV\x00"      # Full cut
@@ -65,38 +65,39 @@ def print_ticket(number):
     buf += INIT
     buf += CODE_PAGE_CP865
 
-    # 1) Overskrift
+    # --- Overskrift ---
     buf += CENTER + BOLD_ON
     buf += "Zoohaven\n".encode('cp865')
     buf += BOLD_OFF
 
-    # 1a) ASCII-hunden
+    # --- ASCII-illustrasjon ---
     buf += CENTER
-    buf += "  __      _\n".encode('cp865')
-    buf += "o'')}____//\n".encode('cp865')
-    buf += " `_/      )\n".encode('cp865')
-    buf += " (_(_/-(_/\n\n".encode('cp865')
+    buf += "            |\\_/|        D\\___/\\\n".encode('cp865')
+    buf += "            (0_0)         (0_o)\n".encode('cp865')
+    buf += "           ==(Y)==         (V)\n".encode('cp865')
+    buf += "----------(u)---(u)----oOo--U--oOo---\n".encode('cp865')
+    buf += "__|_______|_______|_______|_______|___\n\n".encode('cp865')
 
-    # 2) Nummer i 3× størrelse
+    # --- Nummer i 3× størrelse ---
     buf += CENTER + SIZE_TRIPLE
     buf += f"{number}\n".encode('cp865')
     buf += SIZE_NORMAL
 
-    # 3) Detaljer venstrejustert
+    # --- Detaljer venstrejustert ---
     buf += LEFT
     buf += f"Tjeneste: {SERVICE_NAME}\n".encode('cp865')
     buf += f"Dato:      {date}\n".encode('cp865')
     buf += f"Tid:       {clock}\n\n".encode('cp865')
 
-    # 4) Takkemelding
+    # --- Takkemelding ---
     buf += CENTER
     buf += "Takk for ditt besøk!\n".encode('cp865')
 
-    # 5) Ekstra info
+    # --- Ekstra info ---
     buf += "Sjekk ut www.zoohaven.no for oppdaterte åpningstider.\n".encode('cp865')
     buf += "Vi ønsker deg en fin dag.\n".encode('cp865')
 
-    # 6) Mat & kutt
+    # --- Mat & kutt ---
     buf += FEED_BOTTOM + CUT_FULL
 
     if send_to_printer(buf):
@@ -135,7 +136,7 @@ def main():
     import threading
     threading.Thread(target=prefetch_tickets, daemon=True).start()
 
-    print("Starter Epson TM-T88VI kiosk med hund og bunntekst…")
+    print("Starter Epson TM-T88VI kiosk med ASCII-illustrasjon…")
     try:
         while True:
             time.sleep(1)
