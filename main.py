@@ -5,7 +5,6 @@ import sys
 import time
 import datetime
 import requests
-from queue import Queue
 from gpiozero import Button
 
 # ----------------- KONFIGURASJON -----------------
@@ -15,8 +14,6 @@ PORT         = 9100
 API_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
 BUTTON_PIN   = 17  # BCM-pin for trykknapp
 SERVICE_NAME = "Zoohaven"
-# Buffer for forhåndshenting av maks 2 numre
-queue_buffer = Queue(maxsize=1)
 
 # ----------------- HJELPEFUNKSJONER -----------------
 def get_new_ticket_from_api(service):
@@ -41,7 +38,6 @@ def send_to_printer(data: bytes):
         print(f"Utskrift-feil: {e}")
         return False
 
-
 # ----------------- PRINTFUNKSJON -----------------
 def print_ticket(number):
     """Bygger ESC/POS-kommando og sender til Epson-kutter."""
@@ -62,7 +58,7 @@ def print_ticket(number):
     data += SIZE_NORMAL
     data += f"Tjeneste: {SERVICE_NAME}\n".encode('utf-8')
     data += f"{now}\n\n".encode('utf-8')
-    data += b"Takk for ditt besok!\n\n"
+    data += b"Takk for ditt besøk!\n\n"
     data += FEED
     data += CUT_FULL
 
@@ -71,27 +67,13 @@ def print_ticket(number):
     else:
         print(f"Utskrift feilet for {number}")
 
-
 # ----------------- HOVEDLOGIKK -----------------
 def issue_new_ticket():
-    if queue_buffer.empty():
-        num = get_new_ticket_from_api(SERVICE_NAME)
+    number = get_new_ticket_from_api(SERVICE_NAME)
+    if number:
+        print_ticket(number)
     else:
-        num = queue_buffer.get()
-    if num:
-        print_ticket(num)
-    else:
-        print("Kunne ikke hente que nummer.")
-
-
-def prefetch_tickets():
-    while True:
-        if not queue_buffer.full():
-            num = get_new_ticket_from_api(SERVICE_NAME)
-            if num:
-                queue_buffer.put(num)
-                print(f"Forhåndshentet: {num}")
-        time.sleep(0.1)
+        print("Kunne ikke hente kønummer.")
 
 
 def main():
@@ -99,18 +81,13 @@ def main():
     btn = Button(BUTTON_PIN)
     btn.when_pressed = issue_new_ticket
 
-    # Start prefetch i bakgrunn
-    import threading
-    threading.Thread(target=prefetch_tickets, daemon=True).start()
-
-    print("Starter Epson TM-T88VI kiosk...")
+    print("Starter Epson TM-T88VI kiosk (en lapp per trykk)...")
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         print("Avslutter...")
         sys.exit(0)
-
 
 if __name__ == '__main__':
     main()
