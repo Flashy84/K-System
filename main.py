@@ -66,9 +66,9 @@ def print_ticket(number):
     buf += CODE_PAGE_CP865
 
     # --- Overskrift ---
-    buf += CENTER + BOLD_ON
-    buf += "Zoohaven\n".encode('cp865')
-    buf += BOLD_OFF
+    buf += CENTER + SIZE_TRIPLE
+    buf += "VELKOMMEN\n".encode('cp865')
+    buf += SIZE_NORMAL
 
     # --- Nummer i 3× størrelse ---
     buf += CENTER + SIZE_TRIPLE
