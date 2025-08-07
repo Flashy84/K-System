@@ -10,7 +10,7 @@ from gpiozero import Button
 
 # ----------------- KONFIGURASJON -----------------
 # Sett IP-adresse til din Epson TM-T88VI
-IP_ADDRESS   = "192.168.10.50"  # Endre til skriverens IP
+IP_ADDRESS   = "192.168.10.154"  # Endre til skriverens IP
 PORT         = 9100
 API_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
 BUTTON_PIN   = 17  # BCM-pin for trykknapp
