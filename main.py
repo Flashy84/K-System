@@ -51,5 +51,4 @@ def image_to_raster(path):
 
     # Bygg GS v 0 rasterbit-image header
     data = bytearray()
-    data += b"\x1d\x76\x30\x00"  # GS v 0 m=0
-
+    data += b"v0
