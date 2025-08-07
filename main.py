@@ -66,9 +66,9 @@ def print_ticket(number):
     buf += CODE_PAGE_CP865
 
     # --- Overskrift ---
-    buf += CENTER + BOLD_ON
+    buf += CENTER + SIZE_TRIPLE
     buf += "Zoohaven\n".encode('cp865')
-    buf += BOLD_OFF
+    buf += SIZE_NORMAL
 
     # --- Nummer i 3× størrelse ---
     buf += CENTER + SIZE_TRIPLE
@@ -81,11 +81,7 @@ def print_ticket(number):
     buf += f"Dato:      {date}\n".encode('cp865')
     buf += f"Tid:       {clock}\n\n".encode('cp865')
 
-    # --- Takk og ekstra info ---
-    buf += CENTER
-
-
-
+  
     # --- Mat og kutt ---
     buf += FEED_BOTTOM + CUT_FULL
 
