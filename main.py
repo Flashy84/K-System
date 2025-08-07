@@ -1,4 +1,4 @@
-# zoohaven_epson_kiosk.py
+# main.py
 
 import socket
 import sys
@@ -25,7 +25,6 @@ def get_new_ticket_from_api(service):
         print(f"API-feil: {e}")
     return None
 
-
 def send_to_printer(data: bytes) -> bool:
     """Sender rå ESC/POS-data til skriveren over TCP/IP."""
     try:
@@ -40,31 +39,28 @@ def send_to_printer(data: bytes) -> bool:
 
 # ----------------- PRINTFUNKSJON -----------------
 def print_ticket(number):
-    """Bygger og sender ESC/POS-kommandoer for kjølapp."""
-    timestamp = datetime.datetime.now().strftime('%d.%m.%Y %H:%M')
+    """Bygger og sender ESC/POS-kommandoer for én kølapp."""
+    now = datetime.datetime.now().strftime('%d.%m.%Y %H:%M')
 
     # ESC/POS-kommandoer
-    INIT        = b"\x1b@"            # ESC @ (Initialize)
-    CENTER      = b"\x1ba\x01"      # ESC a 1 (Center)
-    SIZE_DOUBLE = b"\x1d!\x11"      # GS ! 0x11 (2× width&height)
-    SIZE_NORMAL = b"\x1d!\x00"      # GS ! 0x00 (normal)
-    FEED        = b"\n" * 8         # 8 linjer mat
-    CUT_FULL    = b"\x1dV\x00"      # GS V 0 (full cut)
+    INIT        = b"\x1b@"        # ESC @ (reset)
+    CENTER      = b"\x1ba\x01"    # ESC a 1 (centre)
+    SIZE_DOUBLE = b"\x1d!\x11"    # GS ! 0x11 = dobbel størrelse
+    SIZE_NORMAL = b"\x1d!\x00"    # GS ! 0x00 = normal størrelse
+    FEED        = b"\n" * 8       # mat 8 linjer
+    CUT_FULL    = b"\x1dV\x00"    # GS V 0 = full kutt
 
-    # Bygg data
     buf = bytearray()
-    buf += INIT
-    buf += CENTER
-    buf += SIZE_DOUBLE
-    buf += f"Nr: {number}\n".encode('utf-8')
-    buf += SIZE_NORMAL
-    buf += f"Tjeneste: {SERVICE_NAME}\n".encode('utf-8')
-    buf += f"{timestamp}\n\n".encode('utf-8')
-    buf += "Takk for ditt besøk!
-
-".encode('utf-8')
-    buf += FEED
-    buf += CUT_FULL
+    buf += INIT + CENTER
+    # Nr i dobbel størrelse
+    buf += SIZE_DOUBLE + f"Nr: {number}\n".encode("utf-8") + SIZE_NORMAL
+    # Tjeneste og tidspunkt
+    buf += f"Tjeneste: {SERVICE_NAME}\n".encode("utf-8")
+    buf += f"{now}\n\n".encode("utf-8")
+    # Takk-tekst med ÆØÅ-støtte
+    buf += "Takk for ditt besøk!\n\n".encode("utf-8")
+    # Mat og kutt
+    buf += FEED + CUT_FULL
 
     if send_to_printer(buf):
         print(f"Utskrift OK: {number}")
@@ -73,19 +69,18 @@ def print_ticket(number):
 
 # ----------------- HOVEDLOGIKK -----------------
 def issue_new_ticket():
-    number = get_new_ticket_from_api(SERVICE_NAME)
-    if number:
-        print_ticket(number)
+    num = get_new_ticket_from_api(SERVICE_NAME)
+    if num:
+        print_ticket(num)
     else:
         print("Kunne ikke hente kønummer.")
 
-
 def main():
-    # Sett opp knapp med debounce
+    # Sett opp knapp med bounce-time for å unngå dobbeltklikk
     btn = Button(BUTTON_PIN, bounce_time=0.3)
     btn.when_pressed = issue_new_ticket
 
-    print("Starter Epson TM-T88VI kiosk (kun tekst, ingen bilder)...")
+    print("Starter Epson TM-T88VI kiosk...")
     try:
         while True:
             time.sleep(1)
