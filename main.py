@@ -76,7 +76,7 @@ def print_ticket(number):
     buf += SIZE_NORMAL
 
     # --- Detaljer venstrejustert ---
-    buf += LEFT
+    buf += CENTER
     buf += f"Tjeneste: {SERVICE_NAME}\n".encode('cp865')
     buf += f"Dato:      {date}\n".encode('cp865')
     buf += f"Tid:       {clock}\n\n".encode('cp865')
@@ -85,20 +85,6 @@ def print_ticket(number):
     buf += CENTER
 
 
-
-    # --- Ny ASCII-illustrasjon ---
-    buf += CENTER
-    buf += "  ,-.       _,---._ __  / \\\n".encode('cp865')
-    buf += " /  )    .-'       `./ /   \\\n".encode('cp865')
-    buf += "(  (   ,'            `/    /|\n".encode('cp865')
-    buf += " \\  `-\"             '\\\\'   / |\n".encode('cp865')
-    buf += "  `.              ,  \\ \\ /  |\n".encode('cp865')
-    buf += "   /`.          ,'-`----Y   |\n".encode('cp865')
-    buf += "  (            ;        |   '\n".encode('cp865')
-    buf += "  |  ,-.    ,-'         |  /\n".encode('cp865')
-    buf += "  |  | (   |  Zoohaven   | / \n".encode('cp865')
-    buf += "  )  |  \\  `.__________|/\n".encode('cp865')
-    buf += "  `--'   `--'\n\n".encode('cp865')
 
     # --- Mat og kutt ---
     buf += FEED_BOTTOM + CUT_FULL
