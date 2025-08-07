@@ -9,10 +9,10 @@ from queue import Queue
 from gpiozero import Button
 
 # ----------------- KONFIGURASJON -----------------
-IP_ADDRESS   = "192.168.10.154"  # Endre til skriverens IP
+IP_ADDRESS   = "192.168.10.154"  # Endre til din Epson TM-T88VI IP
 PORT         = 9100
 API_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
-BUTTON_PIN   = 17  # BCM-pin for trykknapp
+BUTTON_PIN   = 17                # BCM-pin for trykknapp
 SERVICE_NAME = "Zoohaven"
 
 # Buffer for forhåndshenting av maks 1 nummer
@@ -21,10 +21,14 @@ queue_buffer = Queue(maxsize=1)
 # ----------------- HJELPEFUNKSJONER -----------------
 def get_new_ticket_from_api(service):
     try:
-        resp = requests.post(API_ENDPOINT, data={"service_type": service}, timeout=5)
-        data = resp.json()
-        if resp.status_code == 200 and data.get('status') == 'success':
-            return data.get('queue_number')
+        resp = requests.post(
+            API_ENDPOINT,
+            data={"service_type": service},
+            timeout=5
+        )
+        j = resp.json()
+        if resp.status_code == 200 and j.get("status") == "success":
+            return j.get("queue_number")
     except Exception as e:
         print(f"API-feil: {e}")
     return None
@@ -42,27 +46,45 @@ def send_to_printer(data: bytes) -> bool:
 
 # ----------------- PRINTFUNKSJON -----------------
 def print_ticket(number):
-    """Bygger ESC/POS-kommando og sender til Epson-kutter med all tekst i dobbel størrelse."""
+    """Bygger og sender en ryddig og oversiktlig kølapp."""
     now = datetime.datetime.now().strftime('%d.%m.%Y %H:%M')
+    date, clock = now.split()
 
     # ESC/POS-kommandoer
-    INIT        = b"\x1b@"      # ESC @ (Initialize)
-    CENTER      = b"\x1ba\x01"  # ESC a 1 (Center)
-    SIZE_DOUBLE = b"\x1d!\x11"  # GS ! 0x11 = dobbel bredde & høyde
-    FEED        = b"\n" * 8     # Mat 8 linjer
-    CUT_FULL    = b"\x1dV\x00"  # GS V 0 = full kutt
+    INIT        = b"\x1b@"      # ESC @ (reset)
+    CENTER      = b"\x1ba\x01"  # ESC a 1 (center)
+    LEFT        = b"\x1ba\x00"  # ESC a 0 (left)
+    BOLD_ON     = b"\x1bE\x01"  # ESC E 1 (bold on)
+    BOLD_OFF    = b"\x1bE\x00"  # ESC E 0 (bold off)
+    SIZE_DOUBLE = b"\x1d!\x11"  # GS ! 0x11 (double width & height)
+    SIZE_NORMAL = b"\x1d!\x00"  # GS ! 0x00 (normal size)
+    FEED        = b"\n" * 4     # Feed 4 lines
+    CUT_FULL    = b"\x1dV\x00"  # GS V 0 (full cut)
 
     buf = bytearray()
-    # Initialiser, sentrer og sett dobbelt størrelse
-    buf += INIT + CENTER + SIZE_DOUBLE
+    buf += INIT
 
-    # All tekst i dobbel størrelse
-    buf += f"Nr: {number}\n".encode("utf-8")
-    buf += f"Tjeneste: {SERVICE_NAME}\n".encode("utf-8")
-    buf += f"{now}\n\n".encode("utf-8")
-    buf += "Takk for ditt besøk!\n\n".encode("utf-8")
+    # 1) Overskrift
+    buf += CENTER + BOLD_ON
+    buf += "Zoohaven\n".encode('utf-8')
+    buf += BOLD_OFF
 
-    # Mat og kutt
+    # 2) Nummer i stor & tydelig stil
+    buf += CENTER + SIZE_DOUBLE
+    buf += f"{number}\n".encode('utf-8')
+    buf += SIZE_NORMAL
+
+    # 3) Detaljer venstrejustert
+    buf += LEFT
+    buf += f"Tjeneste: {SERVICE_NAME}\n".encode('utf-8')
+    buf += f"Dato:      {date}\n".encode('utf-8')
+    buf += f"Tid:       {clock}\n\n".encode('utf-8')
+
+    # 4) Takkemelding
+    buf += CENTER
+    buf += "Takk for ditt besøk!\n".encode('utf-8')
+
+    # 5) Feed og kutt
     buf += FEED + CUT_FULL
 
     if send_to_printer(buf):
@@ -93,20 +115,20 @@ def issue_new_ticket():
         print("Kunne ikke hente kønummer.")
 
 def main():
-    # Oppsett knapp med debounce
+    # Sett opp knapp med debounce
     btn = Button(BUTTON_PIN, bounce_time=0.3)
     btn.when_pressed = issue_new_ticket
 
-    # Start prefetch i bakgrunn
+    # Start forhåndshenting i bakgrunnen
     import threading
     threading.Thread(target=prefetch_tickets, daemon=True).start()
 
-    print("Starter Epson TM-T88VI kiosk med større tekst...")
+    print("Starter Epson TM-T88VI kiosk...")
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("Avslutter...")
+        print("Avslutter…")
         sys.exit(0)
 
 if __name__ == '__main__':
