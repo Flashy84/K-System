@@ -65,9 +65,9 @@ def print_ticket(number):
     buf += INIT
 
     # 1) Overskrift
-    buf += CENTER + BOLD_ON
+    buf += CENTER + SIZE_DOUBLE
     buf += "Zoohaven\n".encode('utf-8')
-    buf += BOLD_OFF
+    buf += SIZE_NORMAL
 
     # 2) Nummer i stor & tydelig stil
     buf += CENTER + SIZE_DOUBLE
