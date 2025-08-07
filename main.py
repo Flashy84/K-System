@@ -62,7 +62,7 @@ def print_ticket(number):
     data += SIZE_NORMAL
     data += f"Tjeneste: {SERVICE_NAME}\n".encode('utf-8')
     data += f"{now}\n\n".encode('utf-8')
-    data += b"Takk for ditt besøk!\n\n"
+    data += b"Takk for ditt besok!\n\n"
     data += FEED
     data += CUT_FULL
 
@@ -81,7 +81,7 @@ def issue_new_ticket():
     if num:
         print_ticket(num)
     else:
-        print("Kunne ikke hente kønummer.")
+        print("Kunne ikke hente que nummer.")
 
 
 def prefetch_tickets():
