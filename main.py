@@ -14,7 +14,7 @@ PORT         = 9100
 API_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
 BUTTON_PIN   = 17  # BCM-pin for trykknapp
 SERVICE_NAME = "Zoohaven"
-LOGO_PATH    = "logo_new.png"
+LOGO_PATH    = "logo.png"
 QR_PATH      = "googleqr.png"
 
 # ----------------- HJELPEFUNKSJONER -----------------
