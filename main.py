@@ -9,7 +9,7 @@ from queue import Queue
 from gpiozero import Button
 
 # ----------------- KONFIGURASJON -----------------
-IP_ADDRESS   = "192.168.10.154"  # Endre til din Epson TM-T88VI IP
+IP_ADDRESS   = "192.168.10.154"  # Din Epson TM-T88VI IP
 PORT         = 9100
 API_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
 BUTTON_PIN   = 17                # BCM-pin for trykknapp
@@ -44,19 +44,19 @@ def send_to_printer(data: bytes) -> bool:
 
 # ----------------- PRINTFUNKSJON -----------------
 def print_ticket(number):
-    """Bygger og sender en ryddig kølapp med ASCII-dekor nederst."""
+    """Bygger og sender en kølapp med ASCII-hund venstrejustert nederst."""
     now = datetime.datetime.now().strftime('%d.%m.%Y %H:%M')
     date, clock = now.split()
 
     # ESC/POS-kommandoer
     INIT            = b"\x1b@"          # Reset
     CODE_PAGE_CP865 = b"\x1b\x74\x17"   # CP865 Nordic (ÆØÅ)
-    CENTER          = b"\x1ba\x01"      # Center
-    LEFT            = b"\x1ba\x00"      # Left
+    CENTER          = b"\x1ba\x01"      # Center-align
+    LEFT            = b"\x1ba\x00"      # Left-align
     BOLD_ON         = b"\x1bE\x01"
     BOLD_OFF        = b"\x1bE\x00"
     SIZE_TRIPLE     = b"\x1d!\x22"      # 3×3 font for nummer
-    SIZE_NORMAL     = b"\x1d!\x00"      # Normal
+    SIZE_NORMAL     = b"\x1d!\x00"      # Normal size
     FEED_TOP        = b"\n" * 2         # Mat før dekor
     FEED_BOTTOM     = b"\n" * 6         # Mat før kutt
     CUT_FULL        = b"\x1dV\x00"      # Full cut
@@ -66,35 +66,39 @@ def print_ticket(number):
     buf += CODE_PAGE_CP865
 
     # --- Overskrift ---
-    buf += CENTER + SIZE_TRIPLE
-    buf += "ZOOHAVEN\n".encode('cp865')
+    buf += CENTER + BOLD_ON
+    buf += "Zoohaven\n".encode('cp865')
+    buf += BOLD_OFF
 
-    buf += " ".encode('cp865')
-    buf += SIZE_NORMAL
     # --- Nummer i 3× størrelse ---
     buf += CENTER + SIZE_TRIPLE
     buf += f"{number}\n".encode('cp865')
     buf += SIZE_NORMAL
-    buf += " ".encode('cp865')
 
-    # --- ASCII-hund nederst ---
+    # --- Detaljer venstrejustert ---
     buf += LEFT
+    buf += f"Tjeneste: {SERVICE_NAME}\n".encode('cp865')
+    buf += f"Dato:      {date}\n".encode('cp865')
+    buf += f"Tid:       {clock}\n\n".encode('cp865')
+
+    # --- Takk og ekstra info ---
+    buf += CENTER
+    buf += "Takk for ditt besøk!\n".encode('cp865')
+    buf += "Sjekk ut www.zoohaven.no for oppdaterte åpningstider.\n".encode('cp865')
+    buf += "Vi ønsker deg en fin dag.\n".encode('cp865')
+
+    # --- ASCII-hund venstrejustert nederst ---
+    buf += FEED_TOP
+    buf += LEFT  # venstrejuster ASCII-illustrasjonen
     buf += "           ^\\\n".encode('cp865')
     buf += " /        //o__o\n".encode('cp865')
     buf += "/\\       /  __/\n".encode('cp865')
-    buf += "\\ \\______\\  /     -Jeg vil ha Godbit!\n".encode('cp865')
+    buf += "\\ \\______\\  /     -ARF! [says Sandy]\n".encode('cp865')
     buf += " \\         /\n".encode('cp865')
     buf += "  \\ \\----\\ \\\n".encode('cp865')
     buf += "   \\_\\_   \\_\\_\n\n".encode('cp865')
 
-    
-    # --- Detaljer venstrejustert ---
-    buf += CENTER
-    buf += f"Tjeneste: {SERVICE_NAME}\n".encode('cp865')
-    buf += f"Dato: {date} - {clock}\n".encode('cp865')
-
-  
-    # --- Mat og kutt ---
+    # --- Mat & kutt ---
     buf += FEED_BOTTOM + CUT_FULL
 
     if send_to_printer(buf):
@@ -133,7 +137,7 @@ def main():
     import threading
     threading.Thread(target=prefetch_tickets, daemon=True).start()
 
-    print("Starter Epson TM-T88VI kiosk med ASCII-dekor…")
+    print("Starter Epson TM-T88VI kiosk med ASCII-hund…")
     try:
         while True:
             time.sleep(1)
