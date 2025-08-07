@@ -89,6 +89,9 @@ def print_ticket(number):
 
     # --- ASCII-dekor nederst ---
     buf += FEED_TOP
+    buf += "            |\_/|        D\___/\\n".encode('cp865')
+    buf += "            (0_0)         (0_o)\n".encode('cp865')
+    buf += "           ==(Y)==         (V)\n".encode('cp865')
     buf += "----------(u)---(u)----oOo--U--oOo---\n".encode('cp865')
     buf += "__|_______|_______|_______|_______|___\n".encode('cp865')
 
