@@ -65,6 +65,13 @@ def print_ticket(number):
     buf += INIT
     buf += CODE_PAGE_CP865
 
+        buf += CENTER
+    buf += "  __      _\n".encode('cp865')
+    buf += "o'')}____//\n".encode('cp865')
+    buf += " `_/      )\n".encode('cp865')
+    buf += " (_(_/-(_/\n\n".encode('cp865')
+
+
     # --- Overskrift ---
     buf += CENTER + SIZE_TRIPLE
     buf += "Zoohaven\n".encode('cp865')
