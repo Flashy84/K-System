@@ -66,7 +66,7 @@ def print_ticket(number):
 
     # 1) Overskrift
     buf += CENTER + SIZE_DOUBLE
-    buf += "Zoohaven\n".encode('utf-8')
+    buf += "ZOOHAVEN\n".encode('utf-8')
     buf += SIZE_NORMAL
 
     # 2) Nummer i stor & tydelig stil
@@ -82,7 +82,7 @@ def print_ticket(number):
 
     # 4) Takkemelding
     buf += CENTER
-    buf += "Takk for ditt besøk!\n".encode('utf-8')
+    buf += "Takk for ditt besøk!\n".encode('cp865')
 
     # 5) Feed og kutt
     buf += FEED + CUT_FULL
