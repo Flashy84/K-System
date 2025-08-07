@@ -1,4 +1,3 @@
-```python
 # main.py
 
 import socket
