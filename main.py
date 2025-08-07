@@ -56,7 +56,7 @@ def print_ticket(number):
     LEFT        = b"\x1ba\x00"  # ESC a 0 (left)
     BOLD_ON     = b"\x1bE\x01"  # ESC E 1 (bold on)
     BOLD_OFF    = b"\x1bE\x00"  # ESC E 0 (bold off)
-    SIZE_DOUBLE = b"\x1d!\x11"  # GS ! 0x11 (double width & height)
+    SIZE_DOUBLE = b"\x1d!\x22"  # GS ! 0x11 (double width & height)
     SIZE_NORMAL = b"\x1d!\x00"  # GS ! 0x00 (normal size)
     FEED        = b"\n" * 4     # Feed 4 lines
     CUT_FULL    = b"\x1dV\x00"  # GS V 0 (full cut)
