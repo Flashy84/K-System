@@ -58,7 +58,7 @@ def print_ticket(number):
     data += SIZE_NORMAL
     data += f"Tjeneste: {SERVICE_NAME}\n".encode('utf-8')
     data += f"{now}\n\n".encode('utf-8')
-    data += b"Takk for ditt besøk!\n\n"
+    data += b"Takk for ditt besok!\n\n"
     data += FEED
     data += CUT_FULL
 
