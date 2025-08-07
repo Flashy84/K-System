@@ -9,7 +9,6 @@ from queue import Queue
 from gpiozero import Button
 
 # ----------------- KONFIGURASJON -----------------
-# Sett IP-adresse til din Epson TM-T88VI
 IP_ADDRESS   = "192.168.10.154"  # Endre til skriverens IP
 PORT         = 9100
 API_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
@@ -43,26 +42,26 @@ def send_to_printer(data: bytes) -> bool:
 
 # ----------------- PRINTFUNKSJON -----------------
 def print_ticket(number):
-    """Bygger ESC/POS-kommando og sender til Epson-kutter."""
+    """Bygger ESC/POS-kommando og sender til Epson-kutter med all tekst i dobbel størrelse."""
     now = datetime.datetime.now().strftime('%d.%m.%Y %H:%M')
 
     # ESC/POS-kommandoer
-    INIT        = b"\x1b@"        # ESC @ (Initialize)
-    CENTER      = b"\x1ba\x01"    # ESC a 1 (Center)
-    SIZE_DOUBLE = b"\x1d!\x11"    # GS ! 0x11 (2× bredde/høyde)
-    SIZE_NORMAL = b"\x1d!\x00"    # GS ! 0x00 (normal størrelse)
-    FEED        = b"\n" * 8       # 8 linjer feed
-    CUT_FULL    = b"\x1dV\x00"    # GS V 0 (full cut)
+    INIT        = b"\x1b@"      # ESC @ (Initialize)
+    CENTER      = b"\x1ba\x01"  # ESC a 1 (Center)
+    SIZE_DOUBLE = b"\x1d!\x11"  # GS ! 0x11 = dobbel bredde & høyde
+    FEED        = b"\n" * 8     # Mat 8 linjer
+    CUT_FULL    = b"\x1dV\x00"  # GS V 0 = full kutt
 
     buf = bytearray()
-    buf += INIT + CENTER
-    # Nummer i dobbel størrelse
-    buf += SIZE_DOUBLE + f"Nr: {number}\n".encode("utf-8") + SIZE_NORMAL
-    # Tjeneste og tidspunkt
+    # Initialiser, sentrer og sett dobbelt størrelse
+    buf += INIT + CENTER + SIZE_DOUBLE
+
+    # All tekst i dobbel størrelse
+    buf += f"Nr: {number}\n".encode("utf-8")
     buf += f"Tjeneste: {SERVICE_NAME}\n".encode("utf-8")
     buf += f"{now}\n\n".encode("utf-8")
-    # Takk-tekst (med ASCII-bokstaver for ÆØÅ-problematikk)
-    buf += b"Takk for ditt besok!\n\n"
+    buf += "Takk for ditt besøk!\n\n".encode("utf-8")
+
     # Mat og kutt
     buf += FEED + CUT_FULL
 
@@ -102,7 +101,7 @@ def main():
     import threading
     threading.Thread(target=prefetch_tickets, daemon=True).start()
 
-    print("Starter Epson TM-T88VI kiosk...")
+    print("Starter Epson TM-T88VI kiosk med større tekst...")
     try:
         while True:
             time.sleep(1)
