@@ -67,7 +67,7 @@ def print_ticket(number):
 
     # --- Overskrift ---
     buf += CENTER + SIZE_TRIPLE
-    buf += "Zoohaven\n".encode('cp865')
+    buf += "ZOOHAVEN\n".encode('cp865')
     buf += SIZE_NORMAL
 
     # --- Nummer i 3× størrelse ---
