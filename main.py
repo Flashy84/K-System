@@ -78,7 +78,7 @@ def print_ticket(number):
     buf += " ".encode('cp865')
 
     # --- ASCII-hund nederst ---
-    buf += FEED_TOP
+    buf += LEFT
     buf += "           ^\\\n".encode('cp865')
     buf += " /        //o__o\n".encode('cp865')
     buf += "/\\       /  __/\n".encode('cp865')
