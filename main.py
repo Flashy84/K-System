@@ -87,13 +87,21 @@ def print_ticket(number):
     buf += "Sjekk ut www.zoohaven.no for oppdaterte åpningstider.\n".encode('cp865')
     buf += "Vi ønsker deg en fin dag.\n".encode('cp865')
 
-    # --- ASCII-dekor nederst ---
-    buf += FEED_TOP
-    buf += "            |\_/|        D\___/\\n".encode('cp865')
-    buf += "            (0_0)         (0_o)\n".encode('cp865')
-    buf += "       ==(Y)==         (V)\n".encode('cp865')
-    buf += "----------(u)---(u)----oOo--U--oOo---\n".encode('cp865')
-    buf += "__|_______|_______|_______|_______|___\n".encode('cp865')
+
+
+    # --- Ny ASCII-illustrasjon ---
+    buf += CENTER
+    buf += "  ,-.       _,---._ __  / \\\n".encode('cp865')
+    buf += " /  )    .-'       `./ /   \\\n".encode('cp865')
+    buf += "(  (   ,'            `/    /|\n".encode('cp865')
+    buf += " \\  `-\"             '\\\\'   / |\n".encode('cp865')
+    buf += "  `.              ,  \\ \\ /  |\n".encode('cp865')
+    buf += "   /`.          ,'-`----Y   |\n".encode('cp865')
+    buf += "  (            ;        |   '\n".encode('cp865')
+    buf += "  |  ,-.    ,-'         |  /\n".encode('cp865')
+    buf += "  |  | (   |Zoohaven|   / \n".encode('cp865')
+    buf += "  )  |  \\  `.___________|/\n".encode('cp865')
+    buf += "  `--'   `--'\n\n".encode('cp865')
 
     # --- Mat og kutt ---
     buf += FEED_BOTTOM + CUT_FULL
