@@ -76,11 +76,9 @@ def print_ticket(number):
     buf += SIZE_NORMAL
 
     # --- Detaljer venstrejustert ---
-    buf += LEFT
+    buf += CENTER
     buf += f"Tjeneste: {SERVICE_NAME}\n".encode('cp865')
-    buf += f"Dato:      {date}\n".encode('cp865')
-    buf += f"Tid:       {clock}\n\n".encode('cp865')
-
+    buf += f"Dato: {date} - {clock}\n".encode('cp865')
 
 
     # --- ASCII-hund venstrejustert nederst ---
