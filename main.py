@@ -9,7 +9,7 @@ from queue import Queue
 from gpiozero import Button
 
 # ----------------- KONFIGURASJON -----------------
-IP_ADDRESS   = "192.168.10.154"  # Endre til din Epson TM-T88VI IP
+IP_ADDRESS   = "192.168.10.154"  # Din Epson TM-T88VI IP
 PORT         = 9100
 API_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
 BUTTON_PIN   = 17                # BCM-pin for trykknapp
@@ -21,11 +21,9 @@ queue_buffer = Queue(maxsize=1)
 # ----------------- HJELPEFUNKSJONER -----------------
 def get_new_ticket_from_api(service):
     try:
-        resp = requests.post(
-            API_ENDPOINT,
-            data={"service_type": service},
-            timeout=5
-        )
+        resp = requests.post(API_ENDPOINT,
+                             data={"service_type": service},
+                             timeout=5)
         j = resp.json()
         if resp.status_code == 200 and j.get("status") == "success":
             return j.get("queue_number")
@@ -46,46 +44,53 @@ def send_to_printer(data: bytes) -> bool:
 
 # ----------------- PRINTFUNKSJON -----------------
 def print_ticket(number):
-    """Bygger og sender en ryddig og oversiktlig kølapp."""
+    """Bygger og sender en ryddig kølapp med ekstra bunntekst."""
     now = datetime.datetime.now().strftime('%d.%m.%Y %H:%M')
     date, clock = now.split()
 
     # ESC/POS-kommandoer
-    INIT        = b"\x1b@"      # ESC @ (reset)
-    CENTER      = b"\x1ba\x01"  # ESC a 1 (center)
-    LEFT        = b"\x1ba\x00"  # ESC a 0 (left)
-    BOLD_ON     = b"\x1bE\x01"  # ESC E 1 (bold on)
-    BOLD_OFF    = b"\x1bE\x00"  # ESC E 0 (bold off)
-    SIZE_DOUBLE = b"\x1d!\x22"  # GS ! 0x11 (double width & height)
-    SIZE_NORMAL = b"\x1d!\x00"  # GS ! 0x00 (normal size)
-    FEED        = b"\n" * 4     # Feed 4 lines
-    CUT_FULL    = b"\x1dV\x00"  # GS V 0 (full cut)
+    INIT            = b"\x1b@"      # Reset
+    CODE_PAGE_CP865 = b"\x1b\x74\x17"  # CP865 Nordic (ÆØÅ)
+    CENTER          = b"\x1ba\x01"  # Center
+    LEFT            = b"\x1ba\x00"  # Left
+    BOLD_ON         = b"\x1bE\x01"
+    BOLD_OFF        = b"\x1bE\x00"
+    SIZE_TRIPLE     = b"\x1d!\x22"  # 3×3 for nummer
+    SIZE_NORMAL     = b"\x1d!\x00"  # Normal
+    FEED_TOP        = b"\n" * 2     # kort mat før bunntekst
+    FEED_BOTTOM     = b"\n" * 6     # ekstra mat før kutt
+    CUT_FULL        = b"\x1dV\x00"  # Full cut
 
     buf = bytearray()
     buf += INIT
+    buf += CODE_PAGE_CP865
 
-    # 1) Overskrift
-    buf += CENTER + SIZE_DOUBLE
-    buf += "ZOOHAVEN\n".encode('utf-8')
+    # --- Overskrift ---
+    buf += CENTER + SIZE_TRIPLE
+    buf += "Zoohaven\n".encode('cp865')
     buf += SIZE_NORMAL
 
-    # 2) Nummer i stor & tydelig stil
-    buf += CENTER + SIZE_DOUBLE
-    buf += f"{number}\n".encode('utf-8')
+    # --- Nummer ---
+    buf += CENTER + SIZE_TRIPLE
+    buf += f"{number}\n".encode('cp865')
     buf += SIZE_NORMAL
 
-    # 3) Detaljer venstrejustert
+    # --- Detaljer ---
     buf += LEFT
-    buf += f"Tjeneste: {SERVICE_NAME}\n".encode('utf-8')
-    buf += f"Dato:      {date}\n".encode('utf-8')
-    buf += f"Tid:       {clock}\n\n".encode('utf-8')
+    buf += f"Tjeneste: {SERVICE_NAME}\n".encode('cp865')
+    buf += f"Dato:      {date}\n".encode('cp865')
+    buf += f"Tid:       {clock}\n\n".encode('cp865')
 
-    # 4) Takkemelding
+    # --- Takk & bunntekst ---
     buf += CENTER
     buf += "Takk for ditt besøk!\n".encode('cp865')
+    buf += FEED_TOP
+    buf += "Sjekk ut www.zoohaven.no for oppdaterte åpningstider.\n".encode('cp865')
+    buf += "Vi ønsker deg en fin dag.\n".encode('cp865')
 
-    # 5) Feed og kutt
-    buf += FEED + CUT_FULL
+    # --- Mat & kutt ---
+    buf += FEED_BOTTOM
+    buf += CUT_FULL
 
     if send_to_printer(buf):
         print(f"Utskrift OK: {number}")
@@ -115,7 +120,7 @@ def issue_new_ticket():
         print("Kunne ikke hente kønummer.")
 
 def main():
-    # Sett opp knapp med debounce
+    # Oppsett knapp med debounce
     btn = Button(BUTTON_PIN, bounce_time=0.3)
     btn.when_pressed = issue_new_ticket
 
@@ -123,7 +128,7 @@ def main():
     import threading
     threading.Thread(target=prefetch_tickets, daemon=True).start()
 
-    print("Starter Epson TM-T88VI kiosk...")
+    print("Starter Epson TM-T88VI kiosk med bunntekst...")
     try:
         while True:
             time.sleep(1)
