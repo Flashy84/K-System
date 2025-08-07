@@ -68,17 +68,19 @@ def print_ticket(number):
     # --- Overskrift ---
     buf += CENTER + SIZE_TRIPLE
     buf += "ZOOHAVEN\n".encode('cp865')
-    buf += SIZE_NORMAL
 
+    buf += " ".encode('cp865')
+    buf += SIZE_NORMAL
     # --- Nummer i 3× størrelse ---
     buf += CENTER + SIZE_TRIPLE
     buf += f"{number}\n".encode('cp865')
     buf += SIZE_NORMAL
+    buf += " ".encode('cp865')
 
     # --- Detaljer venstrejustert ---
     buf += CENTER
     buf += f"Tjeneste: {SERVICE_NAME}\n".encode('cp865')
-    buf += f"Dato:      {date} - {clock}\n".encode('cp865')
+    buf += f"Dato: {date} - {clock}\n".encode('cp865')
 
   
     # --- Mat og kutt ---
