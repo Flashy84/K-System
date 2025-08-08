@@ -9,11 +9,12 @@ from queue import Queue
 from gpiozero import Button
 
 # ----------------- KONFIGURASJON -----------------
-IP_ADDRESS   = "192.168.10.154"  # Din Epson TM-T88VI IP
-PORT         = 9100
-API_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
-BUTTON_PIN   = 17                # BCM-pin for trykknapp
-SERVICE_NAME = "Zoohaven"
+IP_ADDRESS      = "192.168.10.154"  # Din Epson TM-T88VI IP
+PORT            = 9100
+API_ENDPOINT    = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
+STATUS_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/status.php'  # Endepunkt for statusmeldinger
+BUTTON_PIN      = 17                # BCM-pin for trykknapp
+SERVICE_NAME    = "Zoohaven"
 
 # Buffer for forhåndshenting av maks 1 nummer
 queue_buffer = Queue(maxsize=1)
@@ -42,6 +43,23 @@ def send_to_printer(data: bytes) -> bool:
         print(f"Utskrift-feil: {e}")
         return False
 
+# ----------------- STATUSFUNKSJON -----------------
+def send_online_status():
+    """Sender en 'online' statusmelding til serveren."""
+    try:
+        payload = {
+            "service": SERVICE_NAME,
+            "status": "online",
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+        resp = requests.post(STATUS_ENDPOINT, data=payload, timeout=5)
+        if resp.status_code == 200:
+            print("Status: online – melding sendt.")
+        else:
+            print(f"Statusmelding feilet: HTTP {resp.status_code}")
+    except Exception as e:
+        print(f"Feil ved sending av statusmelding: {e}")
+
 # ----------------- PRINTFUNKSJON -----------------
 def print_ticket(number):
     """Bygger og sender en kølapp med ASCII-hund venstrejustert nederst."""
@@ -66,9 +84,9 @@ def print_ticket(number):
     buf += CODE_PAGE_CP865
 
     # --- Overskrift ---
-    buf += CENTER + SIZE_TRIPLE
-    buf += "VELKOMMEN\n".encode('cp865')
-    buf += SIZE_NORMAL
+    buf += CENTER + BOLD_ON
+    buf += "Zoohaven\n".encode('cp865')
+    buf += BOLD_OFF
 
     # --- Nummer i 3× størrelse ---
     buf += CENTER + SIZE_TRIPLE
@@ -76,17 +94,24 @@ def print_ticket(number):
     buf += SIZE_NORMAL
 
     # --- Detaljer venstrejustert ---
-    buf += CENTER
-    buf += f"Dato: {date} - {clock}\n".encode('cp865')
+    buf += LEFT
+    buf += f"Tjeneste: {SERVICE_NAME}\n".encode('cp865')
+    buf += f"Dato:      {date}\n".encode('cp865')
+    buf += f"Tid:       {clock}\n\n".encode('cp865')
 
+    # --- Takk og ekstra info ---
+    buf += CENTER
+    buf += "Takk for ditt besøk!\n".encode('cp865')
+    buf += "Sjekk ut www.zoohaven.no for oppdaterte åpningstider.\n".encode('cp865')
+    buf += "Vi ønsker deg en fin dag.\n".encode('cp865')
 
     # --- ASCII-hund venstrejustert nederst ---
     buf += FEED_TOP
-    buf += LEFT  # venstrejuster ASCII-illustrasjonen
+    buf += LEFT
     buf += "           ^\\\n".encode('cp865')
     buf += " /        //o__o\n".encode('cp865')
     buf += "/\\       /  __/\n".encode('cp865')
-    buf += "\\ \\______\\  /     -GODBIT! [sier Nala]\n".encode('cp865')
+    buf += "\\ \\______\\  /     -ARF! [says Sandy]\n".encode('cp865')
     buf += " \\         /\n".encode('cp865')
     buf += "  \\ \\----\\ \\\n".encode('cp865')
     buf += "   \\_\\_   \\_\\_\n\n".encode('cp865')
@@ -122,6 +147,9 @@ def issue_new_ticket():
         print("Kunne ikke hente kønummer.")
 
 def main():
+    # Send statusmelding ved oppstart
+    send_online_status()
+
     # Sett opp knapp med debounce
     btn = Button(BUTTON_PIN, bounce_time=0.3)
     btn.when_pressed = issue_new_ticket
@@ -130,7 +158,7 @@ def main():
     import threading
     threading.Thread(target=prefetch_tickets, daemon=True).start()
 
-    print("Starter Epson TM-T88VI kiosk med ASCII-hund…")
+    print("Starter Epson TM-T88VI kiosk med statusmeldinger…")
     try:
         while True:
             time.sleep(1)
