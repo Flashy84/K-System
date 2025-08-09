@@ -9,7 +9,7 @@ from queue import Queue
 from gpiozero import Button
 
 # ----------------- KONFIGURASJON -----------------
-IP_ADDRESS      = "192.168.10.154"
+IP_ADDRESS      = "192.168.10.106"
 PORT            = 9100
 API_ENDPOINT    = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
 STATUS_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/status.php'
