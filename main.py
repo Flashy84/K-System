@@ -5,8 +5,8 @@ import sys
 import time
 import datetime
 import requests
-from queue import Queue
 from gpiozero import Button
+import threading
 
 # ----------------- KONFIGURASJON -----------------
 IP_ADDRESS      = "192.168.10.154"  # Din Epson TM-T88VI IP
@@ -16,10 +16,21 @@ STATUS_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/status.php'  # Endepun
 BUTTON_PIN      = 17                # BCM-pin for trykknapp
 SERVICE_NAME    = "Zoohaven"
 
-# Buffer for forhåndshenting av maks 1 nummer
-queue_buffer = Queue(maxsize=1)
+# Hindrer at to utskrifter starter samtidig
+print_lock = threading.Lock()
 
 # ----------------- HJELPEFUNKSJONER -----------------
+def get_local_ip():
+    """Finner lokal IP-adresse ved å koble mot en ekstern adresse."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        return s.getsockname()[0]
+    except Exception:
+        return "unknown"
+    finally:
+        s.close()
+
 def get_new_ticket_from_api(service):
     try:
         resp = requests.post(API_ENDPOINT,
@@ -36,6 +47,7 @@ def send_to_printer(data: bytes) -> bool:
     """Sender rå ESC/POS-data til skriveren over TCP/IP."""
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(5)  # liten timeout så vi ikke henger
             sock.connect((IP_ADDRESS, PORT))
             sock.sendall(data)
         return True
@@ -45,16 +57,17 @@ def send_to_printer(data: bytes) -> bool:
 
 # ----------------- STATUSFUNKSJON -----------------
 def send_online_status():
-    """Sender en 'online' statusmelding til serveren."""
+    """Sender en 'online' statusmelding til serveren (inkl. lokal IP)."""
     try:
         payload = {
-            "service": SERVICE_NAME,
-            "status": "online",
-            "timestamp": datetime.datetime.now().isoformat()
+            "service":   SERVICE_NAME,
+            "status":    "online",
+            "timestamp": datetime.datetime.now().isoformat(),
+            "ip":        get_local_ip(),
         }
         resp = requests.post(STATUS_ENDPOINT, data=payload, timeout=5)
         if resp.status_code == 200:
-            print("Status: online – melding sendt.")
+            print(f"Status: online – melding sendt (ip={payload['ip']}).")
         else:
             print(f"Statusmelding feilet: HTTP {resp.status_code}")
     except Exception as e:
@@ -123,27 +136,19 @@ def print_ticket(number):
     else:
         print(f"Utskrift feilet for {number}")
 
-# ----------------- PREFETCH -----------------
-def prefetch_tickets():
-    while True:
-        if not queue_buffer.full():
-            num = get_new_ticket_from_api(SERVICE_NAME)
-            if num:
-                queue_buffer.put(num)
-                print(f"Forhåndshentet: {num}")
-        time.sleep(0.1)
-
 # ----------------- HOVEDLOGIKK -----------------
 def issue_new_ticket():
-    if queue_buffer.empty():
+    # Lås så vi ikke dobbelprinter hvis knappen “spretter”
+    if not print_lock.acquire(blocking=False):
+        return
+    try:
         num = get_new_ticket_from_api(SERVICE_NAME)
-    else:
-        num = queue_buffer.get()
-
-    if num:
-        print_ticket(num)
-    else:
-        print("Kunne ikke hente kønummer.")
+        if num:
+            print_ticket(num)
+        else:
+            print("Kunne ikke hente kønummer.")
+    finally:
+        print_lock.release()
 
 def main():
     # Send statusmelding ved oppstart
@@ -153,11 +158,7 @@ def main():
     btn = Button(BUTTON_PIN, bounce_time=0.3)
     btn.when_pressed = issue_new_ticket
 
-    # Start forhåndshenting i bakgrunnen
-    import threading
-    threading.Thread(target=prefetch_tickets, daemon=True).start()
-
-    print("Starter Epson TM-T88VI kiosk med statusmeldinger…")
+    print("Starter Epson TM-T88VI kiosk (ingen prefetch)…")
     try:
         while True:
             time.sleep(1)
