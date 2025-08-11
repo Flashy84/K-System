@@ -106,11 +106,7 @@ def print_ticket(number):
     buf += f"{number}\n".encode('cp865')
     buf += SIZE_NORMAL
 
-    # --- Detaljer venstrejustert ---
-    buf += LEFT
-    buf += f"Tjeneste: {SERVICE_NAME}\n".encode('cp865')
-    buf += f"Dato:      {date}\n".encode('cp865')
-    buf += f"Tid:       {clock}\n\n".encode('cp865')
+
 
     # --- Takk og ekstra info ---
     buf += CENTER
@@ -123,11 +119,12 @@ def print_ticket(number):
     buf += "           ^\\\n".encode('cp865')
     buf += " /        //o__o\n".encode('cp865')
     buf += "/\\       /  __/\n".encode('cp865')
-    buf += "\\ \\______\\  /     -ARF! [says Sandy]\n".encode('cp865')
+    buf += "\\ \\______\\  /     -GODBIT! Sier Nala\n".encode('cp865')
     buf += " \\         /\n".encode('cp865')
     buf += "  \\ \\----\\ \\\n".encode('cp865')
     buf += "   \\_\\_   \\_\\_\n\n".encode('cp865')
 
+    buf += f"Tid:    {clock} - {date}\n".encode('cp865')
     # --- Mat & kutt ---
     buf += FEED_BOTTOM + CUT_FULL
 
