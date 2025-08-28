@@ -9,19 +9,26 @@ from gpiozero import Button
 import threading
 
 # ----------------- KONFIGURASJON -----------------
-IP_ADDRESS      = "192.168.10.103"  # Din Epson TM-T88VI IP
+IP_ADDRESS      = "192.168.10.103"  # Epson TM-T88VI IP
 PORT            = 9100
 API_ENDPOINT    = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
-STATUS_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/status.php'  # Endepunkt for statusmeldinger
+STATUS_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/status.php'
 BUTTON_PIN      = 17                # BCM-pin for trykknapp
 SERVICE_NAME    = "Zoohaven"
 
-# Hindrer at to utskrifter starter samtidig
+# Knapp-tuning
+BUTTON_DEBOUNCE_S = 0.02            # 20 ms program-debounce (rask respons)
+PRESS_COOLDOWN_S  = 0.35            # grace-vindu som stopper dobbelt-tapp
+
+# Hindrer overlappende utskrifter
 print_lock = threading.Lock()
+
+# Til intern tapp-cooldown
+_last_press_ts = 0.0
+_last_press_lock = threading.Lock()
 
 # ----------------- HJELPEFUNKSJONER -----------------
 def get_local_ip():
-    """Finner lokal IP-adresse ved å koble mot en ekstern adresse."""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         s.connect(("8.8.8.8", 80))
@@ -33,9 +40,7 @@ def get_local_ip():
 
 def get_new_ticket_from_api(service):
     try:
-        resp = requests.post(API_ENDPOINT,
-                             data={"service_type": service},
-                             timeout=5)
+        resp = requests.post(API_ENDPOINT, data={"service_type": service}, timeout=5)
         j = resp.json()
         if resp.status_code == 200 and j.get("status") == "success":
             return j.get("queue_number")
@@ -44,10 +49,9 @@ def get_new_ticket_from_api(service):
     return None
 
 def send_to_printer(data: bytes) -> bool:
-    """Sender rå ESC/POS-data til skriveren over TCP/IP."""
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(5)  # liten timeout så vi ikke henger
+            sock.settimeout(5)
             sock.connect((IP_ADDRESS, PORT))
             sock.sendall(data)
         return True
@@ -55,9 +59,7 @@ def send_to_printer(data: bytes) -> bool:
         print(f"Utskrift-feil: {e}")
         return False
 
-# ----------------- STATUSFUNKSJON -----------------
 def send_online_status():
-    """Sender en 'online' statusmelding til serveren (inkl. lokal IP)."""
     try:
         payload = {
             "service":   SERVICE_NAME,
@@ -67,7 +69,7 @@ def send_online_status():
         }
         resp = requests.post(STATUS_ENDPOINT, data=payload, timeout=5)
         if resp.status_code == 200:
-            print(f"Status: online – melding sendt (ip={payload['ip']}).")
+            print(f"Status: online – sendt (ip={payload['ip']}).")
         else:
             print(f"Statusmelding feilet: HTTP {resp.status_code}")
     except Exception as e:
@@ -75,47 +77,48 @@ def send_online_status():
 
 # ----------------- PRINTFUNKSJON -----------------
 def print_ticket(number):
-    """Bygger og sender en kølapp med ASCII-hund venstrejustert nederst."""
+    """Skriv ut billett der nummer vises som 00–99 (to siffer)."""
     now = datetime.datetime.now().strftime('%d.%m.%Y %H:%M')
     date, clock = now.split()
+
+    # ---- Viktig: map til 00–99 for visning ----
+    try:
+        n_real = int(str(number).strip())
+    except Exception:
+        n_real = 0
+    n_disp = n_real % 100              # 100 -> 0, 101 -> 1, ...
+    n_disp_txt = f"{n_disp:02d}"       # "00".."99"
 
     # ESC/POS-kommandoer
     INIT            = b"\x1b@"          # Reset
     CODE_PAGE_CP865 = b"\x1b\x74\x17"   # CP865 Nordic (ÆØÅ)
-    CENTER          = b"\x1ba\x01"      # Center-align
-    LEFT            = b"\x1ba\x00"      # Left-align
+    CENTER          = b"\x1ba\x01"
+    LEFT            = b"\x1ba\x00"
     BOLD_ON         = b"\x1bE\x01"
     BOLD_OFF        = b"\x1bE\x00"
-    SIZE_TRIPLE     = b"\x1d!\x22"      # 3×3 font for nummer
-    SIZE_NORMAL     = b"\x1d!\x00"      # Normal size
-    FEED_TOP        = b"\n" * 2         # Mat før dekor
-    FEED_BOTTOM     = b"\n" * 6         # Mat før kutt
-    CUT_FULL        = b"\x1dV\x00"      # Full cut
+    SIZE_TRIPLE     = b"\x1d!\x22"
+    SIZE_NORMAL     = b"\x1d!\x00"
+    FEED_TOP        = b"\n" * 2
+    FEED_BOTTOM     = b"\n" * 6
+    CUT_FULL        = b"\x1dV\x00"
 
     buf = bytearray()
-    buf += INIT
-    buf += CODE_PAGE_CP865
+    buf += INIT + CODE_PAGE_CP865
 
-    # --- Overskrift ---
     buf += CENTER + BOLD_ON
     buf += "Zoohaven\n".encode('cp865')
     buf += BOLD_OFF
 
-    # --- Nummer i 3× størrelse ---
+    # Visningsnummer i stor skrift (00–99)
     buf += CENTER + SIZE_TRIPLE
-    buf += f"{number}\n".encode('cp865')
+    buf += (n_disp_txt + "\n").encode('cp865')
     buf += SIZE_NORMAL
 
-
-
-    # --- Takk og ekstra info ---
     buf += CENTER
-    buf += "Takk for ditt besøk!\n".encode('cp865')
-    buf += "Vi ønsker deg en fin dag.\n".encode('cp865')
+    buf += "Takk for ditt besok!\n".encode('cp865')
+    buf += "Vi onsker deg en fin dag.\n".encode('cp865')
 
-    # --- ASCII-hund venstrejustert nederst ---
-    buf += FEED_TOP
-    buf += LEFT
+    buf += FEED_TOP + LEFT
     buf += "           ^\\\n".encode('cp865')
     buf += " /        //o__o\n".encode('cp865')
     buf += "/\\       /  __/\n".encode('cp865')
@@ -125,37 +128,47 @@ def print_ticket(number):
     buf += "   \\_\\_   \\_\\_\n\n".encode('cp865')
 
     buf += f"Tid:    {clock} - {date}\n".encode('cp865')
-    # --- Mat & kutt ---
+
     buf += FEED_BOTTOM + CUT_FULL
 
     if send_to_printer(buf):
-        print(f"Utskrift OK: {number}")
+        print(f"Utskrift OK: real={n_real} visning={n_disp_txt}")
     else:
-        print(f"Utskrift feilet for {number}")
+        print(f"Utskrift feilet for {n_real}")
 
-# ----------------- HOVEDLOGIKK -----------------
+# ----------------- JOBB (kjøres i egen tråd) -----------------
 def issue_new_ticket():
-    # Lås så vi ikke dobbelprinter hvis knappen “spretter”
     if not print_lock.acquire(blocking=False):
         return
     try:
         num = get_new_ticket_from_api(SERVICE_NAME)
-        if num:
+        if num is not None:
             print_ticket(num)
         else:
             print("Kunne ikke hente kønummer.")
     finally:
         print_lock.release()
 
+# ----------------- KNAPPEHÅNDTERER -----------------
+def on_button_pressed():
+    """Kalles ved press; filtrerer raske gjentak og starter jobb i egen tråd."""
+    global _last_press_ts
+    now = time.monotonic()
+    with _last_press_lock:
+        if now - _last_press_ts < PRESS_COOLDOWN_S:
+            return
+        _last_press_ts = now
+    threading.Thread(target=issue_new_ticket, daemon=True).start()
+
+# ----------------- MAIN -----------------
 def main():
-    # Send statusmelding ved oppstart
     send_online_status()
 
-    # Sett opp knapp med debounce
-    btn = Button(BUTTON_PIN, bounce_time=0.3)
-    btn.when_pressed = issue_new_ticket
+    # Lav debounce + intern cooldown gir både rask respons og ingen dobbeltprint
+    btn = Button(BUTTON_PIN, pull_up=True, bounce_time=BUTTON_DEBOUNCE_S)
+    btn.when_pressed = on_button_pressed
 
-    print("Starter Epson TM-T88VI kiosk (ingen prefetch)…")
+    print("Starter Epson TM-T88VI kiosk… (00–99 visning aktiv, rask knapprespons)")
     try:
         while True:
             time.sleep(1)
