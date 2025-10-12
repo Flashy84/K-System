@@ -9,7 +9,7 @@ from gpiozero import Button
 import threading
 
 # ----------------- KONFIGURASJON -----------------
-IP_ADDRESS      = "192.168.10.103"  # Epson TM-T88VI IP
+IP_ADDRESS      = "192.168.10.104"  # Epson TM-T88VI IP
 PORT            = 9100
 API_ENDPOINT    = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
 STATUS_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/status.php'
