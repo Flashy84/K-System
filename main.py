@@ -1,5 +1,9 @@
 # zoohaven_epson_kiosk.py
 
+LOG_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/kundelogg.php'
+AUTH_TOKEN   = os.environ.get("AUTH_TOKEN", "W5Rcv7XdqbAthfeMjEI41qqodakzAo")
+HEARTBEAT_EVERY_S = 60
+
 import socket
 import sys
 import time
