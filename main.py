@@ -7,6 +7,9 @@ import time
 import datetime
 import threading
 import requests
+import json
+import tempfile
+import subprocess
 from gpiozero import Button
 
 # ----------------- EKSTERN LOGGING -----------------
@@ -102,21 +105,109 @@ def send_to_printer(data: bytes) -> bool:
         return False
 
 
-def send_online_status():
+# ---------- WAF-deteksjon ----------
+def is_waf_block(resp_text: str, status: int) -> bool:
+    """Returner True hvis svaret ser ut til å være WAF/anti-bot."""
+    if status in (429, 503):
+        return True
+    if not resp_text:
+        return False
+    l = resp_text.lower()
+    return ("checking your browser" in l) or ("proof-of-work" in l) or ("varnish" in l)
+
+
+# ---------- Les miljø fra /etc/zoohaven-kiosk.env (lokalt, ikke i Git) ----------
+def _read_env():
+    env = {}
     try:
-        payload = {
-            "service":   SERVICE_NAME,
-            "status":    "online",
-            "timestamp": datetime.datetime.now().isoformat(),
-            "ip":        get_local_ip(),
+        with open("/etc/zoohaven-kiosk.env", "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                env[k.strip()] = v.strip()
+    except Exception:
+        pass
+    return env
+
+
+# ---------- SFTP (via lftp) – atomisk put -> mv ----------
+def push_status_via_sftp(service_name: str, ip: str) -> bool:
+    env = _read_env()
+    user = env.get("SFTP_USER")
+    host = env.get("SFTP_HOST")
+    pwd  = env.get("SFTP_PASS")
+    rdir = env.get("SFTP_REMOTE_DIR", "/customers/.../httpd.www/kundeskjerm/logs")
+
+    if not (user and host and pwd and rdir):
+        print("SFTP: mangler SFTP_USER/SFTP_HOST/SFTP_PASS/SFTP_REMOTE_DIR i /etc/zoohaven-kiosk.env")
+        return False
+
+    payload = {
+        service_name: {
+            "timestamp": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+            "status": "online",
+            "ip": ip,
+            "ua": "rpi-kiosk"
         }
-        resp = requests.post(STATUS_ENDPOINT, data=payload, timeout=5)
-        if resp.status_code == 200:
-            print(f"Status: online – sendt (ip={payload['ip']}).")
+    }
+
+    # lag midlertidig fil
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".json", mode="w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False)
+        f.flush()
+        local = f.name
+
+    # bygg lftp-kommando; -e betyr "execute disse kommandoene og bye"
+    script = f'mkdir -p {rdir}; put {local} -o {rdir}/status.json.tmp; mv {rdir}/status.json.tmp {rdir}/status.json; bye'
+    cmd = ["lftp", "-u", f"{user},{pwd}", f"sftp://{host}", "-e", script]
+
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+        if res.returncode == 0:
+            return True
         else:
-            print(f"Statusmelding feilet: HTTP {resp.status_code}")
+            err = res.stderr.decode(errors="ignore") or res.stdout.decode(errors="ignore")
+            print("SFTP feilet:", err)
+            return False
     except Exception as e:
-        print(f"Feil ved sending av statusmelding: {e}")
+        print("SFTP exception:", e)
+        return False
+    finally:
+        try:
+            os.unlink(local)
+        except Exception:
+            pass
+
+
+def send_online_status():
+    """Prøv HTTP -> hvis WAF blokkerer, fall tilbake til SFTP."""
+    ip = get_local_ip()
+    payload = {
+        "service":   SERVICE_NAME,
+        "status":    "online",
+        "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+        "ip":        ip,
+    }
+    try:
+        headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/120 Safari/537.36"}
+        resp = requests.post(STATUS_ENDPOINT, data=payload, timeout=5, headers=headers)
+        if resp.status_code == 200 and not is_waf_block(resp.text, resp.status_code):
+            print(f"Status: online – sendt via HTTP (ip={ip}).")
+            return True
+        else:
+            print(f"HTTP status blokkert: {resp.status_code} – prøver SFTP...")
+    except Exception as e:
+        print(f"HTTP status-post feilet: {e} – prøver SFTP...")
+
+    ok = push_status_via_sftp(SERVICE_NAME, ip)
+    if ok:
+        print(f"Status: online – sendt via SFTP (ip={ip}).")
+        return True
+    else:
+        print("Status via SFTP feilet.")
+        return False
 
 
 # ----------------- PRINTFUNKSJON -----------------
@@ -215,7 +306,7 @@ def on_button_pressed():
 
 # ----------------- MAIN -----------------
 def main():
-    log_event("INFO", "startup", event="startup", meta={"version": "1.0"})
+    log_event("INFO", "startup", event="startup", meta={"version": "1.1"})
     send_online_status()
 
     # Start heartbeat
