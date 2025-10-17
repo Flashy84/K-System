@@ -18,7 +18,7 @@ AUTH_TOKEN   = os.environ.get("AUTH_TOKEN", "W5Rcv7XdqbAthfeMjEI41qqodakzAo")
 HEARTBEAT_EVERY_S = 60  # send heartbeat hvert minutt
 
 # ----------------- KONFIGURASJON -----------------
-IP_ADDRESS      = "192.168.10.104"   # Epson TM-T88VI IP
+IP_ADDRESS      = "192.168.10.50"   # Epson TM-T88VI IP
 PORT            = 9100
 API_ENDPOINT    = 'https://www.chris-stian.no/kundeskjerm/create_queue.php'
 STATUS_ENDPOINT = 'https://www.chris-stian.no/kundeskjerm/status.php'
