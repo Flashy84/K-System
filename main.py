@@ -252,6 +252,8 @@ def print_ticket(number):
     buf += CENTER
     buf += "Takk for ditt besok!\n".encode('cp865')
     buf += "Vi onsker deg en fin dag.\n".encode('cp865')
+    buf += "SENDE PAKKE?\n".encode('cp865')
+    buf += "WWW.POSTEN.NO/SENDE\n".encode('cp865')
 
     buf += FEED_TOP + LEFT
     buf += "           ^\\\n".encode('cp865')
