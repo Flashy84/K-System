@@ -255,14 +255,6 @@ def print_ticket(number):
     buf += "SENDE PAKKE?\n".encode('cp865')
     buf += "WWW.POSTEN.NO/SENDE\n".encode('cp865')
 
-    buf += FEED_TOP + LEFT
-    buf += "           ^\\\n".encode('cp865')
-    buf += " /        //o__o\n".encode('cp865')
-    buf += "/\\       /  __/\n".encode('cp865')
-    buf += "\\ \\______\\  /     -GODBIT! Sier Nala\n".encode('cp865')
-    buf += " \\         /\n".encode('cp865')
-    buf += "  \\ \\----\\ \\\n".encode('cp865')
-    buf += "   \\_\\_   \\_\\_\n\n".encode('cp865')
 
     buf += f"Tid:    {clock} - {date}\n".encode('cp865')
 
