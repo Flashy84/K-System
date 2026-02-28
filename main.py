@@ -288,7 +288,7 @@ def issue_new_ticket():
 
 # ----------------- KNAPPEHÅNDTERER -----------------
 def on_button_pressed():
-    """Kalles ved press; filtrerer raske gjentak og starter jobb i egen tråd."""
+    """Kalles ved press; filtrerer raske gjentak og starter jobb i egen tråd. """
     global _last_press_ts
     now = time.monotonic()
     with _last_press_lock:
